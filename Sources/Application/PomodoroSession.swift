@@ -24,13 +24,10 @@ final class PomodoroSession {
     private(set) var timer = PomodoroTimer()
 
     private let ticker: Ticker
-    private let doubleClickWindow: Duration
     private var observers: [PomodoroObserver] = []
-    private var pendingClick: Task<Void, Never>?
 
-    init(ticker: Ticker, doubleClickWindow: Duration = .milliseconds(350)) {
+    init(ticker: Ticker) {
         self.ticker = ticker
-        self.doubleClickWindow = doubleClickWindow
     }
 
     func add(_ observer: PomodoroObserver) {
@@ -43,20 +40,7 @@ final class PomodoroSession {
     }
 
     func handleDockClick() {
-        if pendingClick != nil {
-            pendingClick?.cancel()
-            pendingClick = nil
-            restart()
-            return
-        }
-
-        let window = doubleClickWindow
-        pendingClick = Task { [weak self] in
-            try? await Task.sleep(for: window)
-            guard !Task.isCancelled, let self else { return }
-            self.pendingClick = nil
-            self.apply { $0.togglePause() }
-        }
+        restart()
     }
 
     private func tick() {
@@ -85,8 +69,6 @@ final class PomodoroSession {
 
 extension PomodoroSession: PomodoroCommands {
     func restart() {
-        pendingClick?.cancel()
-        pendingClick = nil
         apply { $0.restart() }
     }
 
@@ -95,8 +77,6 @@ extension PomodoroSession: PomodoroCommands {
     }
 
     func togglePause() {
-        pendingClick?.cancel()
-        pendingClick = nil
         apply { $0.togglePause() }
     }
 }
