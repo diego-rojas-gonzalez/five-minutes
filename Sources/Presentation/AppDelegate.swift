@@ -3,12 +3,13 @@ import Cocoa
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let session = PomodoroSession(ticker: RunLoopTicker())
+    private let wakeLock = DisplayWakeLock()
     private var menu: PomodoroMenu!
     private var menuBar: MenuBarPresenter!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = makeMainMenu()
-        menu = PomodoroMenu(commands: session)
+        menu = PomodoroMenu(commands: session, wakeLock: wakeLock)
         menuBar = MenuBarPresenter(menu: menu)
 
         session.add(DockIconPresenter())

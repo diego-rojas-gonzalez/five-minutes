@@ -3,6 +3,7 @@ import Cocoa
 @MainActor
 final class PomodoroMenu: NSObject, PomodoroObserver {
     private weak var commands: PomodoroCommands?
+    private weak var wakeLock: WakeLockControlling?
     private var currentState: PomodoroTimer.State = .ready
 
     private let menu = NSMenu()
@@ -10,25 +11,31 @@ final class PomodoroMenu: NSObject, PomodoroObserver {
     private let pauseItem = NSMenuItem(title: "Pausar", action: #selector(togglePause), keyEquivalent: "")
     private let restartItem = NSMenuItem(title: "Reiniciar", action: #selector(restart), keyEquivalent: "")
     private let stopItem = NSMenuItem(title: "Detener", action: #selector(stop), keyEquivalent: "")
+    private let wakeLockItem = NSMenuItem(title: "Mantener Mac encendida", action: #selector(toggleWakeLock), keyEquivalent: "")
 
-    init(commands: PomodoroCommands) {
+    init(commands: PomodoroCommands, wakeLock: WakeLockControlling) {
         self.commands = commands
+        self.wakeLock = wakeLock
         super.init()
 
         headerItem.isEnabled = false
 
-        for item in [pauseItem, restartItem, stopItem] {
+        for item in [pauseItem, restartItem, stopItem, wakeLockItem] {
             item.target = self
         }
         pauseItem.image = symbol("pause.circle")
         restartItem.image = symbol("arrow.clockwise.circle")
         stopItem.image = symbol("stop.circle")
+        wakeLockItem.image = symbol("sun.max")
+        wakeLockItem.state = .off
 
         menu.addItem(headerItem)
         menu.addItem(.separator())
         menu.addItem(pauseItem)
         menu.addItem(restartItem)
         menu.addItem(stopItem)
+        menu.addItem(.separator())
+        menu.addItem(wakeLockItem)
     }
 
     func makeMenu() -> NSMenu {
@@ -80,5 +87,13 @@ final class PomodoroMenu: NSObject, PomodoroObserver {
 
     @objc private func stop() {
         commands?.stop()
+    }
+
+    @objc private func toggleWakeLock() {
+        guard let wakeLock else { return }
+        wakeLock.toggleDisplayAwakeLock()
+        let isEnabled = wakeLock.isDisplayAwakeLockEnabled
+        wakeLockItem.state = isEnabled ? .on : .off
+        wakeLockItem.image = symbol(isEnabled ? "sun.max.fill" : "sun.max")
     }
 }
